@@ -1,0 +1,11 @@
+name = "sonteen-auth"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+
+[assets]
+directory = "./public"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "sonteen-auth-db"
+database_id = "ใส่_DATABASE_ID_ตรงนี้"
