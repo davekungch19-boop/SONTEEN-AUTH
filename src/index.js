@@ -96,20 +96,11 @@ async function deleteKey(request, env, id) {
 async function updateKey(request, env, id) {
   let body;
   try { body = await request.json(); } catch { return json({success:false,message:"Invalid JSON"},400); }
-  const sets = [];
-  const vals = [];
-  if (body.status === "active" || body.status === "disabled") {
-    sets.push("status=?");
-    vals.push(body.status);
-  }
-  if ("expiresAt" in body) {
-    sets.push("expires_at=?");
-    vals.push(body.expiresAt ? new Date(body.expiresAt).toISOString() : null);
-  }
-  if (!sets.length) return json({success:false,message:"Nothing to update"},400);
+  const status = body.status === "disabled" ? "disabled" : "active";
+  const expiresAt = body.expiresAt ? new Date(body.expiresAt).toISOString() : null;
   await env.DB.prepare(
-    `UPDATE licenses SET ${sets.join(", ")} WHERE id=?`
-  ).bind(...vals, id).run();
+    "UPDATE licenses SET status=?, expires_at=? WHERE id=?"
+  ).bind(status, expiresAt, id).run();
   return json({success:true});
 }
 
