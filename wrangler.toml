@@ -8,4 +8,4 @@ directory = "./public"
 [[d1_databases]]
 binding = "DB"
 database_name = "sonteen-auth-db"
-database_id = "ใส่_DATABASE_ID_ตรงนี้"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
