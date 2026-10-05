@@ -7,5 +7,5 @@ directory = "./public"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "sonteen-auth-db"
-database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+database_name = "sonteen-auth-db67"
+database_id = "1c67b80a-695c-4067-9dff-66461290b5c8"
