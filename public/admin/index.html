@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SONTEEN AUTH — Admin</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#09070d;color:#eee;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+.wrap{max-width:1000px;margin:auto;padding:28px 16px}.card{background:#14111a;border:1px solid #2b2437;border-radius:18px;padding:20px;margin-bottom:18px}
+h1{margin:0 0 4px}.muted{color:#999}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+input,button{width:100%;border:0;border-radius:12px;padding:13px;font-size:15px}input{background:#0d0b11;color:#fff;border:1px solid #332b40}
+button{background:#b77cff;color:#130b1c;font-weight:700;cursor:pointer}.danger{background:#e66}.small{padding:8px;font-size:13px}
+table{width:100%;border-collapse:collapse;margin-top:14px}th,td{text-align:left;padding:10px;border-bottom:1px solid #29232f;font-size:14px}
+.ok{color:#77e6a5}.bad{color:#ff7777}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>SONTEEN AUTH</h1>
+    <div class="muted">Admin Panel</div>
+  </div>
+
+  <div class="card" id="login">
+    <h2>Admin Login</h2>
+    <input id="token" type="password" placeholder="ADMIN_TOKEN">
+    <button style="margin-top:10px" onclick="login()">เข้าสู่ระบบ</button>
+    <p id="loginMsg" class="muted"></p>
+  </div>
+
+  <div id="panel" style="display:none">
+    <div class="card">
+      <h2>สร้าง License Key</h2>
+      <div class="grid">
+        <input id="customKey" placeholder="เว้นว่างเพื่อสุ่ม Key">
+        <input id="expires" type="datetime-local">
+        <input id="maxDevices" type="number" min="1" value="1" placeholder="จำนวนเครื่อง">
+        <input id="note" placeholder="หมายเหตุ">
+      </div>
+      <button style="margin-top:12px" onclick="createKey()">สร้าง Key</button>
+      <p id="createMsg"></p>
+    </div>
+
+    <div class="card">
+      <h2>License Keys</h2>
+      <button onclick="loadKeys()">รีเฟรช</button>
+      <div style="overflow:auto">
+      <table><thead><tr><th>Key</th><th>Status</th><th>หมดอายุ</th><th>เครื่อง</th><th>จัดการ</th></tr></thead>
+      <tbody id="rows"></tbody></table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let token="";
+const api=(path,opts={})=>{
+  opts.headers={...(opts.headers||{}),"x-admin-token":token,"content-type":"application/json"};
+  return fetch(path,opts).then(r=>r.json());
+};
+async function login(){
+  token=document.getElementById("token").value;
+  const r=await api("/api/admin/keys");
+  if(r.success){
+    document.getElementById("login").style.display="none";
+    document.getElementById("panel").style.display="block";
+    loadKeys();
+  }else document.getElementById("loginMsg").textContent="Token ไม่ถูกต้อง";
+}
+async function createKey(){
+  const e=document.getElementById("expires").value;
+  const r=await api("/api/admin/keys",{method:"POST",body:JSON.stringify({
+    key:document.getElementById("customKey").value,
+    expiresAt:e?new Date(e).toISOString():null,
+    maxDevices:Number(document.getElementById("maxDevices").value||1),
+    note:document.getElementById("note").value
+  })});
+  document.getElementById("createMsg").textContent=r.success?"สร้าง Key: "+r.key:(r.message||"เกิดข้อผิดพลาด");
+  loadKeys();
+}
+async function loadKeys(){
+  const r=await api("/api/admin/keys");
+  const rows=document.getElementById("rows");
+  rows.innerHTML="";
+  if(!r.success)return;
+  for(const x of r.items){
+    const tr=document.createElement("tr");
+    const exp=x.expires_at?new Date(x.expires_at).toLocaleString():"ไม่หมดอายุ";
+    tr.innerHTML=`<td>${esc(x.key)}</td><td class="${x.status==="active"?"ok":"bad"}">${x.status}</td><td>${exp}</td><td>${x.max_devices}</td><td><button class="small" onclick="toggleKey(${x.id},'${x.status}')">${x.status==="active"?"ปิด":"เปิด"}</button> <button class="small danger" onclick="deleteKey(${x.id})">ลบ</button></td>`;
+    rows.appendChild(tr);
+  }
+}
+async function toggleKey(id,status){
+  await api("/api/admin/keys/"+id,{method:"PATCH",body:JSON.stringify({status:status==="active"?"disabled":"active"})});
+  loadKeys();
+}
+async function deleteKey(id){
+  if(!confirm("ลบ Key นี้?"))return;
+  await api("/api/admin/keys/"+id,{method:"DELETE"});
+  loadKeys();
+}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+</script>
+</body>
+</html>
